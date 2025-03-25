@@ -1,0 +1,7 @@
+*.pyc
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.docx
+settings.py
