@@ -120,6 +120,8 @@ USE_TZ = True
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
+UPLOADS_DIR = os.path.join(BASE_DIR, 'media/uploads')  # Для загруженных файлов
+CONVERTED_DIR = os.path.join(BASE_DIR, 'media/converted')  # Для конвертированных файлов
 
 STATIC_URL = 'static/'
 
