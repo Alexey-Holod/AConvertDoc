@@ -8,7 +8,7 @@
 
         {%if download_url %}
         <h1>Download</h1>
-        <a href="{{ download_url }}">{{ download_url }}</a><br>
+        <a href="{{ download_url }}">{{ download_url }}</a><br><br><br>
         <a href="{% url '/' %}">Back</a>
         {% else %}
         {{ form }}

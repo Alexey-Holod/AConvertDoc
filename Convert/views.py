@@ -6,14 +6,34 @@ from django.shortcuts import render
 from .forms import UploadFileForm
 from pdf2docx import Converter
 from AConvertDoc import settings
+import easyocr
 
 
-def upload_file(request):
+# def text_recognition(request):
+#     reader = easyocr.Reader(['ru', 'en'], gpu=False, workers=2)  # workers = количество ядер, ['ru', 'en'] = языки
+#     file = upload_file(request, scaner=True)
+#     result = reader.readtext(file, detail=0)
+#     print('*****EASYOCR*****\n', result)
+
+
+def upload_file(request, scaner=False):
     if request.method == "POST" and request.FILES['file']:
         uploaded_file = request.FILES['file']
         fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
         filename = fs.save(uploaded_file.name, uploaded_file)
         file_url = os.path.join(settings.MEDIA_ROOT, 'uploads/', filename)
+
+
+        # -----------------------------/-----------------------------
+        # Балуюсь с EASYOCR
+        scaner = True
+        if scaner:
+            reader = easyocr.Reader(['ru', 'en'], gpu=False)  # workers = количество ядер, ['ru', 'en'] = языки
+            print('-----------------------------/-----------------------------', file_url)
+            result = reader.readtext(file_url, detail=0)
+            print('*****EASYOCR*****\n', result)
+        # -----------------------------/-----------------------------
+
 
         # Проверяем наличие файла
         if not os.path.exists(file_url):
