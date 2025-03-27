@@ -1,21 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-    <form method="POST" enctype="multipart/form-data">
-        {{ form.as_p }}
-        <button>Отправить</button>
-        {% csrf_token %}
-    </form>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конвертер документов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+        h2 {
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input[type="file"] {
+            width: 100%;
+        }
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            background: #007bff;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        @media (max-width: 480px) {
+            .container {
+                width: 100%;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Конвертер документов</h2>
+        <form action="#" method="post" enctype="multipart/form-data">
+            {{ form.as_p }}
+            {% csrf_token %}
+            <button type="submit">Отправить</button>
+        </form>
             {%if download_url %}
             <h1>Download</h1>
             <a href="{{ download_url }}">{{ download_url }}</a><br><br><br>
             <a href="{% url '/' %}">Back</a>
-    {% endif %}
-        <h1>{{ validation }}</h1>
-</head>
-<body>
-
+            {% endif %}
+            <h1>{{ validation }}</h1>
+    </div>
 </body>
 </html>
