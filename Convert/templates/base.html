@@ -4,19 +4,16 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <form method="POST" enctype="multipart/form-data">
-
-
-        {%if download_url %}
-        <h1>Download</h1>
-        <a href="{{ download_url }}">{{ download_url }}</a><br><br><br>
-        <a href="{% url '/' %}">Back</a>
-        {% else %}
-        {{ form }}
+        {{ form.as_p }}
         <button>Отправить</button>
-
-        {% endif %}
         {% csrf_token %}
     </form>
+            {%if download_url %}
+            <h1>Download</h1>
+            <a href="{{ download_url }}">{{ download_url }}</a><br><br><br>
+            <a href="{% url '/' %}">Back</a>
+    {% endif %}
+        <h1>{{ validation }}</h1>
 </head>
 <body>
 

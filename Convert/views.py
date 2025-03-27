@@ -5,90 +5,100 @@ from PIL.Image import Image
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse
 from django.shortcuts import render
-from fontTools.misc.cython import returns
 from pdf2image import convert_from_path
-
 from .forms import UploadFileForm
 from pdf2docx import Converter
 from AConvertDoc import settings
 import easyocr
 import numpy as np
-
-
-# def text_recognition(request):
-#     reader = easyocr.Reader(['ru', 'en'], gpu=False, workers=2)  # workers = количество ядер, ['ru', 'en'] = языки
-#     file = upload_file(request, scaner=True)
-#     result = reader.readtext(file, detail=0)
-#     print('*****EASYOCR*****\n', result)
+from .forms import UploadFileForm
 
 
 def upload_file(request, scaner=True):
-    if request.method == "POST" and request.FILES['file']:
-        uploaded_file = request.FILES['file']
-        fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
-        filename = fs.save(uploaded_file.name, uploaded_file)
-        file_url = os.path.join(settings.MEDIA_ROOT, 'uploads/', filename)
+    uploaded_file = request.FILES['file']
+    # print('------------------------------------', request.choice)
+    fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
+    filename = fs.save(uploaded_file.name, uploaded_file)
+    file_url = os.path.join(settings.MEDIA_ROOT, 'uploads/', filename)
+    return file_url
 
-        # -----------------------------/-----------------------------
-        # Балуюсь с EASYOCR
-        # Если пользователь выбрал распознать текст со скана
-        if scaner:
-            reader = easyocr.Reader(['ru', 'en'], gpu=False)  # workers = количество ядер, ['ru', 'en'] = языки
+def start(request):
+    # context = {}
+    if request.method == "POST":
+        file_url = upload_file(request)
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            selected_choice = form.cleaned_data["choice"]  # Получаем значение
 
-            with open(os.path.join(settings.MEDIA_ROOT, 'result_scan/', 'result.txt'), "w", encoding="utf-8") as file:
-
-                # Проверяем расшинение файла
-                if os.path.splitext(file_url)[1] == '.pdf':
-                    images = convert_from_path(file_url)
-
-                    # Разбираем PDF на отдельные картинки
-                    i = 0
-                    for image in images:
-                        image_np = np.array(image)
-                        text = reader.readtext(image_np, detail=0)  # detail=0 → только текст
-                        i += 1
-                        file.write(f"Страница {i}:\n")
-                        file.write("".join(text) + "\n\n")
-                else:
-                    image = reader.readtext(image_np, detail=0)  # detail=0 → только текст
+            # Тут надо проверить выбор функции пользователем
+            # -----------------------------------------------------------
+            if selected_choice == '1':
+                return conversion(request, file_url)
+            elif selected_choice == '2':
+                return  text_recognition(request, file_url)
+            # -----------------------------------------------------------
+        else:
+            validation = 'Валидация формы не пройдена'
+            print(validation)
+            context = {'validation': validation}
+    form = UploadFileForm()
+    context = {'form': form}
+    return render(request, "base.html", context = context)
 
 
-            file.close()
+# Распознать текст
+def text_recognition(request, file_url):
+    reader = easyocr.Reader(['ru', 'en'], gpu=False)  # workers = количество ядер, ['ru', 'en'] = языки
+    with open(os.path.join(settings.MEDIA_ROOT, 'result_scan/', 'result.txt'), "w", encoding="utf-8") as file:
 
-            # Путь для скачивания
-            url_download = os.path.join(settings.MEDIA_ROOT, 'result_scan/', 'result.txt')
-            response = FileResponse(open(str(url_download), "rb"), as_attachment=True)
-            return response
+        # Проверяем расшинение файла
+        if 'pdf' in os.path.splitext(file_url)[1]:
+            images = convert_from_path(file_url)
 
-# -----------------------------/-----------------------------
+            # Разбираем PDF на отдельные картинки
+            i = 0
+            for image in images:
+                image_np = np.array(image)
+                text = reader.readtext(image_np, detail=0)  # detail=0 → только текст
+                i += 1
+                file.write(f"Страница {i}:\n")
+                file.write("".join(text) + "\n\n")
+        else:
+            text = reader.readtext(file_url, detail=0)
+            file.write(f"Страница IMG:\n")
+            file.write("".join(text) + "\n\n")
+    file.close()
 
-        if not scaner:
+    # Путь для скачивания
+    url_download = os.path.join(settings.MEDIA_ROOT, 'result_scan/', 'result.txt')
+    response = FileResponse(open(str(url_download), "rb"), as_attachment=True)
+    print('----------------------', response)
+    return response
 
-            # Проверяем наличие файла
-            if not os.path.exists(file_url):
-                return HttpResponse("Ошибка: файл не найден", status=400)
+# Конвертировать PDF в WORD
+def conversion(request, file_url):
 
-            # Задаём путь для сохранения результата в /media/converted/
-            converted_dir = os.path.join(settings.MEDIA_ROOT, 'converted')
-            os.makedirs(converted_dir, exist_ok=True)
+    # Проверяем наличие файла
+    if not os.path.exists(file_url):
+        return HttpResponse("Ошибка: файл не найден", status=400)
 
-            # Берем вермя для использовании его в имени
-            time_file = str(time())
-            give_file_url = os.path.join(converted_dir, time_file + '.docx')
+    # Задаём путь для сохранения результата в /media/converted/
+    converted_dir = os.path.join(settings.MEDIA_ROOT, 'converted')
+    os.makedirs(converted_dir, exist_ok=True)
 
-            cv = Converter(file_url)
-            cv.convert(str(give_file_url))
-            cv.close()
+    # Берем вермя для использовании его в имени
+    time_file = str(time())
+    give_file_url = os.path.join(converted_dir, time_file + '.docx')
 
-            # Проверяем, существует ли файл
-            if not os.path.exists(give_file_url):
-                return HttpResponse("Файл не найден", status=404)
-            else:
-                # Путь для скачивания
-                url_download = os.path.join(settings.MEDIA_URL, 'converted/', time_file + '.docx')
+    cv = Converter(file_url)
+    cv.convert(str(give_file_url))
+    cv.close()
 
-            return render(request, "base.html", {"download_url": url_download})
+    # Проверяем, существует ли файл
+    if not os.path.exists(give_file_url):
+        return HttpResponse("Файл не найден", status=404)
     else:
-        form = UploadFileForm()
-        return render(request, "base.html", {"form": form})
+        # Путь для скачивания
+        url_download = os.path.join(settings.MEDIA_URL, 'converted/', time_file + '.docx')
+    return render(request, "base.html", {"download_url": url_download})
 # Create your views here.
