@@ -22,8 +22,11 @@ def upload_file(request, scaner=True):
     file_url = os.path.join(settings.MEDIA_ROOT, 'uploads/', filename)
     return file_url
 
-def start(request):
-    # context = {}
+def start(request, ErrorMessage = ''):
+    context = {}
+    if ErrorMessage != '':
+        print(ErrorMessage)
+        context['ErrorMessage'] = ErrorMessage
     if request.method == "POST":
         file_url = upload_file(request)
         form = UploadFileForm(request.POST, request.FILES)
@@ -40,9 +43,9 @@ def start(request):
         else:
             validation = 'Валидация формы не пройдена'
             print(validation)
-            context = {'validation': validation}
+            context['validation'] = validation
     form = UploadFileForm()
-    context = {'form': form}
+    context['form'] = form
     return render(request, "base.html", context = context)
 
 
@@ -54,6 +57,9 @@ def text_recognition(request, file_url):
         # Проверяем расшинение файла
         if 'pdf' in os.path.splitext(file_url)[1]:
             images = convert_from_path(file_url)
+            if len(images) > 5:
+                request.method = ''
+                return start(request, 'СТРАНИЦ БОЛЬШЕ 5ти!')
 
             # Разбираем PDF на отдельные картинки
             i = 0
