@@ -1,5 +1,6 @@
 import os
-from time import time
+import threading
+import time
 
 from PIL.Image import Image
 from django.core.files.storage import FileSystemStorage
@@ -14,9 +15,15 @@ import numpy as np
 from .forms import UploadFileForm
 
 
+def delete_file_after_delay(file_path, delay=10):
+    """Удаляет файл через 10 секунд после отправки пользователю."""
+    time.sleep(delay)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+
 def upload_file(request, scaner=True):
     uploaded_file = request.FILES['file']
-    # print('------------------------------------', request.choice)
     fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
     filename = fs.save(uploaded_file.name, uploaded_file)
     file_url = os.path.join(settings.MEDIA_ROOT, 'uploads/', filename)
@@ -25,7 +32,6 @@ def upload_file(request, scaner=True):
 def start(request, ErrorMessage = ''):
     context = {}
     if ErrorMessage != '':
-        print(ErrorMessage)
         context['ErrorMessage'] = ErrorMessage
     if request.method == "POST":
         file_url = upload_file(request)
@@ -42,7 +48,6 @@ def start(request, ErrorMessage = ''):
             # -----------------------------------------------------------
         else:
             validation = 'Валидация формы не пройдена'
-            print(validation)
             context['validation'] = validation
     form = UploadFileForm()
     context['form'] = form
@@ -78,7 +83,6 @@ def text_recognition(request, file_url):
     # Путь для скачивания
     url_download = os.path.join(settings.MEDIA_ROOT, 'result_scan/', 'result.txt')
     response = FileResponse(open(str(url_download), "rb"), as_attachment=True)
-    print('----------------------', response)
     return response
 
 # Конвертировать PDF в WORD
@@ -93,9 +97,8 @@ def conversion(request, file_url):
     os.makedirs(converted_dir, exist_ok=True)
 
     # Берем вермя для использовании его в имени
-    time_file = str(time())
+    time_file = str(time.time())
     give_file_url = os.path.join(converted_dir, time_file + '.docx')
-
     cv = Converter(file_url)
     cv.convert(str(give_file_url))
     cv.close()
@@ -104,7 +107,10 @@ def conversion(request, file_url):
     if not os.path.exists(give_file_url):
         return HttpResponse("Файл не найден", status=404)
     else:
-        # Путь для скачивания
-        url_download = os.path.join(settings.MEDIA_URL, 'converted/', time_file + '.docx')
-    return render(request, "base.html", {"download_url": url_download})
-# Create your views here.
+        if os.path.exists(file_url):
+            os.remove(file_url)
+    response = FileResponse(open(give_file_url, "rb"), as_attachment=True)
+    threading.Thread(target=delete_file_after_delay, args=(give_file_url,), daemon=True).start()
+    return response
+    #return render(request, "base.html", {"download_url": FileResponse})
+
