@@ -22,7 +22,15 @@ def delete_file_after_delay(file_path, delay=10):
         os.remove(file_path)
 
 
-def upload_file(request, scaner=True):
+def check_pages_count(request, images, count_pages):
+    if len(images) > count_pages:
+        request.method = ''
+        return start(request, f'СТРАНИЦ БОЛЬШЕ {count_pages}!')
+    else:
+        return False
+
+
+def upload_file(request):
     uploaded_file = request.FILES['file']
     fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'uploads'))
     filename = fs.save(uploaded_file.name, uploaded_file)
@@ -62,9 +70,15 @@ def text_recognition(request, file_url):
         # Проверяем расшинение файла
         if 'pdf' in os.path.splitext(file_url)[1]:
             images = convert_from_path(file_url)
-            if len(images) > 5:
-                request.method = ''
-                return start(request, 'СТРАНИЦ БОЛЬШЕ 5ти!')
+
+            check_pages_count(request, images, 5)
+            check_file = check_pages_count(request, images, 5)
+            if check_file:
+                return check_file
+
+            # if len(images) > 5:
+            #     request.method = ''
+            #     return start(request, 'СТРАНИЦ БОЛЬШЕ 5ти!')
 
             # Разбираем PDF на отдельные картинки
             i = 0
@@ -91,6 +105,11 @@ def conversion(request, file_url):
     # Проверяем наличие файла
     if not os.path.exists(file_url):
         return HttpResponse("Ошибка: файл не найден", status=400)
+
+    images = convert_from_path(file_url)
+    check_file = check_pages_count(request, images, 100)
+    if check_file:
+        return check_file
 
     # Задаём путь для сохранения результата в /media/converted/
     converted_dir = os.path.join(settings.MEDIA_ROOT, 'converted')
