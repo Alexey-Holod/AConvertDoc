@@ -2,6 +2,7 @@ import os
 import threading
 import time
 
+import fitz
 from PIL.Image import Image
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponseRedirect, HttpResponse, FileResponse
@@ -22,8 +23,10 @@ def delete_file_after_delay(file_path, delay=10):
         os.remove(file_path)
 
 
-def check_pages_count(request, images, count_pages):
-    if len(images) > count_pages:
+def check_pages_count(request, file_url, count_pages):
+    with fitz.open(file_url) as doc:
+        count_doc = doc.page_count
+    if count_doc > count_pages:
         request.method = ''
         return start(request, f'СТРАНИЦ БОЛЬШЕ {count_pages}!')
     else:
@@ -71,20 +74,16 @@ def text_recognition(request, file_url):
         if 'pdf' in os.path.splitext(file_url)[1]:
             images = convert_from_path(file_url)
 
-            check_pages_count(request, images, 5)
-            check_file = check_pages_count(request, images, 5)
+            # check_pages_count(request, file_url, 5)
+            check_file = check_pages_count(request, file_url, 3)
             if check_file:
                 return check_file
-
-            # if len(images) > 5:
-            #     request.method = ''
-            #     return start(request, 'СТРАНИЦ БОЛЬШЕ 5ти!')
 
             # Разбираем PDF на отдельные картинки
             i = 0
             for image in images:
                 image_np = np.array(image)
-                text = reader.readtext(image_np, detail=0)  # detail=0 → только текст
+                text = reader.readtext(image_np, workers=1, detail=0)  # detail=0 → только текст
                 i += 1
                 file.write(f"Страница {i}:\n")
                 file.write("".join(text) + "\n\n")
@@ -106,8 +105,11 @@ def conversion(request, file_url):
     if not os.path.exists(file_url):
         return HttpResponse("Ошибка: файл не найден", status=400)
 
-    images = convert_from_path(file_url)
-    check_file = check_pages_count(request, images, 100)
+    with fitz.open(file_url) as doc:
+        count_doc = doc.page_count
+
+    # images = convert_from_path(file_url)
+    check_file = check_pages_count(request, file_url, 100)
     if check_file:
         return check_file
 
