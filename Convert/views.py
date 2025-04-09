@@ -58,7 +58,7 @@ def start(request, ErrorMessage = ''):
                 return  text_recognition(request, file_url)
             # -----------------------------------------------------------
         else:
-            validation = 'Валидация формы не пройдена'
+            validation = 'Файл не загружен!'
             context['validation'] = validation
     form = UploadFileForm()
     context['form'] = form

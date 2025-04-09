@@ -62,6 +62,7 @@
         <h2>Конвертер документов</h2>
         <form action="#" method="post" enctype="multipart/form-data">
             {{ form.as_p }}
+            {{ form.error_messages }}
             {% csrf_token %}
             {% if ErrorMessage %}
                 {{ ErrorMessage }}
@@ -76,5 +77,23 @@
             {% endif %}
             <h1>{{ validation }}</h1>
     </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.querySelector("form");
+        const fileInput = document.querySelector("input[type='file']");
+        const maxSize = 5 * 1024 * 1024; // 10 MB в байтах
+
+        form.addEventListener("submit", function (event) {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if (file.size > maxSize) {
+                    alert("Файл слишком большой! Максимальный размер — 5 МБ.");
+                    event.preventDefault(); // отмена отправки формы
+                }
+            }
+        });
+    });
+</script>
 </body>
+
 </html>
