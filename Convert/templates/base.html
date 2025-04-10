@@ -81,13 +81,13 @@
     document.addEventListener("DOMContentLoaded", function () {
         const form = document.querySelector("form");
         const fileInput = document.querySelector("input[type='file']");
-        const maxSize = 5 * 1024 * 1024; // 10 MB в байтах
+        const maxSize = 10 * 1024 * 1024; // 10 MB в байтах
 
         form.addEventListener("submit", function (event) {
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 if (file.size > maxSize) {
-                    alert("Файл слишком большой! Максимальный размер — 5 МБ.");
+                    alert("Файл слишком большой! Максимальный размер — 10 МБ.");
                     event.preventDefault(); // отмена отправки формы
                 }
             }

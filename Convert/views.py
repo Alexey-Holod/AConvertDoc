@@ -28,6 +28,7 @@ def check_pages_count(request, file_url, count_pages):
         count_doc = doc.page_count
     if count_doc > count_pages:
         request.method = ''
+        delete_file_after_delay(file_url)
         return start(request, f'СТРАНИЦ БОЛЬШЕ {count_pages}!')
     else:
         return False
@@ -69,15 +70,13 @@ def start(request, ErrorMessage = ''):
 def text_recognition(request, file_url):
     reader = easyocr.Reader(['ru', 'en'], gpu=False)  # workers = количество ядер, ['ru', 'en'] = языки
     with open(os.path.join(settings.MEDIA_ROOT, 'result_scan/', 'result.txt'), "w", encoding="utf-8") as file:
-
+        # check_pages_count(request, file_url, 5)
+        check_file = check_pages_count(request, file_url, 3)
+        if check_file:
+            return check_file
         # Проверяем расшинение файла
         if 'pdf' in os.path.splitext(file_url)[1]:
             images = convert_from_path(file_url)
-
-            # check_pages_count(request, file_url, 5)
-            check_file = check_pages_count(request, file_url, 3)
-            if check_file:
-                return check_file
 
             # Разбираем PDF на отдельные картинки
             i = 0
